@@ -1,36 +1,85 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Laquila Partners — Site
 
-## Getting Started
+Landing page em produção: `partners.laquilamarketing.com.br` (URL temporária: `laquila-partners.pages.dev`).
 
-First, run the development server:
+## Stack
+
+- **Framework:** Next.js 15 App Router + React 19 + TypeScript
+- **Styling:** Tailwind v4 + CSS customizado (Fraunces + Inter, paleta preta/dourada)
+- **DB:** Supabase (projeto compartilhado `ljhgwesvajyfftehlnay`, tabela `public.leads`)
+- **Validation:** Zod
+- **Host:** Cloudflare Pages via OpenNext (`@opennextjs/cloudflare`)
+
+## Rodar local
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev          # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`.env.local` precisa de `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_APP_URL` — ver `.env.example`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Build de produção
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build:cf     # gera .open-next/ (pronto pra CF Pages)
+```
 
-## Learn More
+## Deploy
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run deploy:cf    # build + wrangler pages deploy
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Requer env vars do shell: `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Estrutura
 
-## Deploy on Vercel
+```
+site/
+├── app/
+│   ├── layout.tsx              fontes + metadata
+│   ├── page.tsx                landing completa
+│   ├── globals.css             tokens visuais (gold #c79a3f, Fraunces, dark closing)
+│   ├── components/
+│   │   └── ApplicationForm.tsx formulário client-side (máscara BR + auto UTMs + fbp/fbc)
+│   └── api/
+│       └── leads/route.ts      POST /api/leads — insert em public.leads com source='partners'
+├── lib/supabase/admin.ts       service_role server-side
+├── scripts/cf-restore-env.mjs  aplica env vars em produção
+├── wrangler.toml               config CF Pages
+├── open-next.config.ts         config OpenNext
+└── public/img/eduardo-laquila.webp
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Endpoint de captura
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+**POST /api/leads** — payload validado com zod:
+
+```ts
+{
+  name: string,            // 2–120
+  email: string,           // email válido
+  phone: string,           // só dígitos no backend
+  area: 'trabalhista' | 'previdenciario' | 'ambas' | 'outra',
+  funcionarios_escritorio: 'solo' | '2-3' | '4+',
+  utm_source?, utm_medium?, utm_campaign?, utm_content?, utm_term?,
+  fbp?, fbc?
+}
+```
+
+Response: `{ ok: true, lead_id: "<uuid>" }` (200) ou `{ ok: false, error: ... }` (400/429/500).
+
+Rate limit: **3 submissões/IP/minuto** (best-effort, em memória do isolate).
+
+Destino: `public.leads` com `source='partners'`. Aparece em `daily_leads` (view compartilhada).
+
+## Env vars (produção)
+
+| Nome | Tipo | Descrição |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | secret_text | URL Supabase |
+| `SUPABASE_SERVICE_ROLE_KEY` | secret_text | Server-side (bypassa RLS) |
+| `NEXT_PUBLIC_APP_URL` | secret_text | `https://partners.laquilamarketing.com.br` |
+
+**Gotcha CF Pages:** OpenNext só injeta `secret_text` em runtime. `plain_text` fica só em build.
