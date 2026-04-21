@@ -161,6 +161,9 @@ section.alt{background:var(--bg-elevated);border-top:1px solid var(--rule);borde
 @media (max-width:600px){.field-row{grid-template-columns:1fr}}
 .form-wrap .btn-primary{width:100%;justify-content:center;padding:16px 24px;font-size:16px;margin-top:8px}
 .form-wrap .btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none}
+/* Variante pro botão "ENTÃO CONHEÇA..." — texto longo, pode quebrar em mobile */
+.form-wrap .btn-alt-cta{font-size:14px;letter-spacing:.02em;line-height:1.25;white-space:normal;text-align:center;padding:14px 18px}
+@media (max-width:480px){.form-wrap .btn-alt-cta{font-size:13px;padding:14px 12px}}
 .form-note{font-size:13px;color:var(--ink-3);margin-top:14px;text-align:center}
 .form-error{background:#fbf5f5;border:1px solid #ead3d3;color:var(--danger);padding:12px 14px;border-radius:8px;font-size:14px;margin-bottom:16px}
 .form-success{background:#f4faf5;border:1px solid #c9e3ce;color:var(--success);padding:16px;border-radius:8px;text-align:center}

@@ -25,6 +25,8 @@ export default function ApplicationForm() {
   const router = useRouter();
   const [state, setState] = useState<State>({ status: 'idle' });
   const [phone, setPhone] = useState('');
+  const [aceitaComissao, setAceitaComissao] = useState('');
+  const naoAceita = aceitaComissao === 'nao';
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -50,8 +52,8 @@ export default function ApplicationForm() {
     });
     if (payload.phone) payload.phone = payload.phone.replace(/\D/g, '');
 
-    // Se o candidato não aceita o modelo de comissão, não entra no funil Partners.
-    // Redireciona pra Laquila Marketing sem enviar nada aos 3 destinos (forms/leads/sheet).
+    // Defesa em profundidade: submit não deveria nem rolar no caso 'nao' (o botão é outro).
+    // Mas se alguém disparar submit via devtools/scripts, garante skip.
     if (payload.aceita_comissao === 'nao') {
       window.location.href = 'https://lp.laquilamarketing.com.br';
       return;
@@ -223,7 +225,13 @@ export default function ApplicationForm() {
 
       <div className="field">
         <label htmlFor="f-aceita_comissao">Você entende e aceita o modelo de comissão sobre contratos fechados?<span className="req">*</span></label>
-        <select id="f-aceita_comissao" name="aceita_comissao" required defaultValue="">
+        <select
+          id="f-aceita_comissao"
+          name="aceita_comissao"
+          required
+          value={aceitaComissao}
+          onChange={(e) => setAceitaComissao(e.target.value)}
+        >
           <option value="" disabled>Selecione</option>
           <option value="sim">Sim, é exatamente isso que estou buscando</option>
           <option value="entender">Quero entender melhor na conversa</option>
@@ -240,13 +248,23 @@ export default function ApplicationForm() {
       <input id="f-fbp" type="hidden" name="fbp" />
       <input id="f-fbc" type="hidden" name="fbc" />
 
-      <button
-        type="submit"
-        className="btn btn-primary"
-        disabled={state.status === 'submitting'}
-      >
-        {state.status === 'submitting' ? 'Enviando…' : 'Enviar aplicação'}
-      </button>
+      {naoAceita ? (
+        <button
+          type="button"
+          className="btn btn-primary btn-alt-cta"
+          onClick={() => { window.location.href = 'https://lp.laquilamarketing.com.br'; }}
+        >
+          ENTÃO CONHEÇA A NOSSA ASSESSORIA POR MENSALIDADE
+        </button>
+      ) : (
+        <button
+          type="submit"
+          className="btn btn-primary"
+          disabled={state.status === 'submitting'}
+        >
+          {state.status === 'submitting' ? 'Enviando…' : 'Enviar aplicação'}
+        </button>
+      )}
 
       <p className="form-note">
         A aplicação não te compromete com nada. Se houver fit, a gente chama para uma conversa sem horário marcado.
