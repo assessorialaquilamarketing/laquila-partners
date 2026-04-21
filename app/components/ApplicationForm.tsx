@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
-type State = { status: 'idle' } | { status: 'submitting' } | { status: 'success' } | { status: 'error'; message: string };
+type State = { status: 'idle' } | { status: 'submitting' } | { status: 'error'; message: string };
 
 const TRACKING_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'] as const;
 
@@ -21,11 +22,11 @@ function maskPhoneBR(v: string): string {
 }
 
 export default function ApplicationForm() {
+  const router = useRouter();
   const [state, setState] = useState<State>({ status: 'idle' });
   const [phone, setPhone] = useState('');
 
   useEffect(() => {
-    // preenche hidden inputs com UTMs e fbp/fbc ao montar
     const url = new URL(window.location.href);
     TRACKING_KEYS.forEach((k) => {
       const el = document.getElementById(`f-${k}`) as HTMLInputElement | null;
@@ -47,7 +48,6 @@ export default function ApplicationForm() {
     fd.forEach((v, k) => {
       if (typeof v === 'string' && v.trim() !== '') payload[k] = v.trim();
     });
-    // phone: guardar só dígitos no backend
     if (payload.phone) payload.phone = payload.phone.replace(/\D/g, '');
 
     setState({ status: 'submitting' });
@@ -61,13 +61,11 @@ export default function ApplicationForm() {
       if (!res.ok || !json.ok) {
         setState({
           status: 'error',
-          message: json?.detail || 'Não conseguimos registrar. Tente novamente em instantes.',
+          message: json?.detail || json?.error || 'Não conseguimos registrar. Tente novamente em instantes.',
         });
         return;
       }
-      setState({ status: 'success' });
-      form.reset();
-      setPhone('');
+      router.push('/obrigado');
     } catch {
       setState({
         status: 'error',
@@ -76,57 +74,31 @@ export default function ApplicationForm() {
     }
   }
 
-  if (state.status === 'success') {
-    return (
-      <div className="form-wrap">
-        <div className="form-success">
-          <h3>Aplicação recebida.</h3>
-          <p>
-            Nosso time analisa cada aplicação manualmente. Se houver fit, entramos em contato pelo
-            WhatsApp nos próximos dias úteis.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <form className="form-wrap" onSubmit={onSubmit} noValidate>
-      <div className="eyebrow" style={{ marginBottom: 10 }}>
-        Aplicação
-      </div>
+    <form className="form-wrap" onSubmit={onSubmit} noValidate id="aplicacao">
+      <div className="eyebrow" style={{ marginBottom: 10 }}>Aplicação</div>
       <h2>Conte como o seu escritório opera hoje.</h2>
       <p className="lede">
-        3 minutos. Só pedimos o que é essencial pra gente avaliar o fit. O time lê cada aplicação.
+        O time lê cada aplicação. Só pedimos o que é essencial pra avaliar fit e chamar
+        você pra uma conversa se fizer sentido.
       </p>
 
       {state.status === 'error' && <div className="form-error">{state.message}</div>}
 
+      <div className="form-section-tag">Quem é você</div>
+
       <div className="field">
-        <label htmlFor="f-name">
-          Nome completo<span className="req">*</span>
-        </label>
+        <label htmlFor="f-name">Nome completo<span className="req">*</span></label>
         <input id="f-name" name="name" type="text" required autoComplete="name" maxLength={120} />
       </div>
 
       <div className="field-row">
         <div className="field">
-          <label htmlFor="f-email">
-            E-mail<span className="req">*</span>
-          </label>
-          <input
-            id="f-email"
-            name="email"
-            type="email"
-            required
-            autoComplete="email"
-            maxLength={200}
-          />
+          <label htmlFor="f-email">E-mail<span className="req">*</span></label>
+          <input id="f-email" name="email" type="email" required autoComplete="email" maxLength={200} />
         </div>
         <div className="field">
-          <label htmlFor="f-phone">
-            WhatsApp<span className="req">*</span>
-          </label>
+          <label htmlFor="f-phone">WhatsApp<span className="req">*</span></label>
           <input
             id="f-phone"
             name="phone"
@@ -143,13 +115,27 @@ export default function ApplicationForm() {
 
       <div className="field-row">
         <div className="field">
-          <label htmlFor="f-area">
-            Especialidade principal<span className="req">*</span>
-          </label>
+          <label htmlFor="f-cidade_uf">Cidade / UF<span className="req">*</span></label>
+          <input id="f-cidade_uf" name="cidade_uf" type="text" required maxLength={120} placeholder="São Paulo / SP" />
+        </div>
+        <div className="field">
+          <label htmlFor="f-escritorio">Nome do escritório<span className="req">*</span></label>
+          <input id="f-escritorio" name="escritorio" type="text" required maxLength={200} />
+        </div>
+      </div>
+
+      <div className="field">
+        <label htmlFor="f-instagram">Instagram do escritório</label>
+        <input id="f-instagram" name="instagram" type="text" maxLength={120} placeholder="@seuescritorio" />
+      </div>
+
+      <div className="form-section-tag">Sua operação hoje</div>
+
+      <div className="field-row">
+        <div className="field">
+          <label htmlFor="f-area">Especialidade principal<span className="req">*</span></label>
           <select id="f-area" name="area" required defaultValue="">
-            <option value="" disabled>
-              Selecione
-            </option>
+            <option value="" disabled>Selecione</option>
             <option value="trabalhista">Trabalhista</option>
             <option value="previdenciario">Previdenciário</option>
             <option value="ambas">Trabalhista + Previdenciário</option>
@@ -157,18 +143,86 @@ export default function ApplicationForm() {
           </select>
         </div>
         <div className="field">
-          <label htmlFor="f-funcionarios">
-            Tamanho do escritório<span className="req">*</span>
-          </label>
+          <label htmlFor="f-funcionarios">Tamanho do escritório<span className="req">*</span></label>
           <select id="f-funcionarios" name="funcionarios_escritorio" required defaultValue="">
-            <option value="" disabled>
-              Selecione
-            </option>
+            <option value="" disabled>Selecione</option>
             <option value="solo">Atuo sozinho(a)</option>
             <option value="2-3">2 a 3 advogados</option>
             <option value="4+">4 ou mais advogados</option>
           </select>
         </div>
+      </div>
+
+      <div className="field-row">
+        <div className="field">
+          <label htmlFor="f-tempo_investimento">Há quanto tempo você investe em marketing digital?<span className="req">*</span></label>
+          <select id="f-tempo_investimento" name="tempo_investimento" required defaultValue="">
+            <option value="" disabled>Selecione</option>
+            <option value="ate6m">Menos de 6 meses</option>
+            <option value="6a12m">6 a 12 meses</option>
+            <option value="1a2a">1 a 2 anos</option>
+            <option value="+2a">Mais de 2 anos</option>
+          </select>
+        </div>
+        <div className="field">
+          <label htmlFor="f-contratos_mes">Contratos fechados por mês (digital, média)<span className="req">*</span></label>
+          <select id="f-contratos_mes" name="contratos_mes" required defaultValue="">
+            <option value="" disabled>Selecione</option>
+            <option value="&lt;5">Menos de 5</option>
+            <option value="5a15">5 a 15</option>
+            <option value="15a30">15 a 30</option>
+            <option value="30a60">30 a 60</option>
+            <option value="+60">Mais de 60</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="field-row">
+        <div className="field">
+          <label htmlFor="f-investimento_trafego">Investimento mensal em tráfego pago<span className="req">*</span></label>
+          <select id="f-investimento_trafego" name="investimento_trafego" required defaultValue="">
+            <option value="" disabled>Selecione</option>
+            <option value="<5k">Até R$ 5 mil</option>
+            <option value="5a15k">R$ 5 mil a R$ 15 mil</option>
+            <option value="15a30k">R$ 15 mil a R$ 30 mil</option>
+            <option value="30a60k">R$ 30 mil a R$ 60 mil</option>
+            <option value="+60k">Mais de R$ 60 mil</option>
+          </select>
+        </div>
+        <div className="field">
+          <label htmlFor="f-quem_roda_marketing">Quem roda seu marketing hoje?<span className="req">*</span></label>
+          <select id="f-quem_roda_marketing" name="quem_roda_marketing" required defaultValue="">
+            <option value="" disabled>Selecione</option>
+            <option value="agencia">Agência</option>
+            <option value="freela">Freelancer / consultor</option>
+            <option value="inhouse">Equipe interna (in-house)</option>
+            <option value="eu">Eu mesmo</option>
+            <option value="nenhum">Ninguém / sem estrutura</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="form-section-tag">Aonde você quer chegar</div>
+
+      <div className="field">
+        <label htmlFor="f-motivo">Por que você está se candidatando ao Partners?<span className="req">*</span></label>
+        <textarea id="f-motivo" name="motivo" required maxLength={1000} rows={3} placeholder="Em 2-3 linhas." />
+      </div>
+
+      <div className="field">
+        <label htmlFor="f-ambicao_12m">Em 12 meses, onde você quer que seu escritório esteja?<span className="req">*</span></label>
+        <textarea id="f-ambicao_12m" name="ambicao_12m" required maxLength={1000} rows={2} placeholder="Em 1-2 linhas." />
+      </div>
+
+      <div className="field">
+        <label htmlFor="f-aceita_comissao">Você entende e aceita o modelo de comissão sobre contratos fechados?<span className="req">*</span></label>
+        <select id="f-aceita_comissao" name="aceita_comissao" required defaultValue="">
+          <option value="" disabled>Selecione</option>
+          <option value="sim">Sim, é exatamente isso que estou buscando</option>
+          <option value="entender">Quero entender melhor na conversa</option>
+          <option value="hibrido">Prefiro explorar a modalidade híbrida</option>
+          <option value="nao">Não tenho interesse nesse formato</option>
+        </select>
       </div>
 
       <input id="f-utm_source" type="hidden" name="utm_source" />
@@ -188,7 +242,7 @@ export default function ApplicationForm() {
       </button>
 
       <p className="form-note">
-        A aplicação não te compromete com nada. Se houver fit, a gente chama para uma conversa.
+        A aplicação não te compromete com nada. Se houver fit, a gente chama para uma conversa sem horário marcado.
       </p>
     </form>
   );

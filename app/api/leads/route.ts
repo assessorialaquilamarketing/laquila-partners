@@ -4,12 +4,33 @@ import { createAdminClient } from '@/lib/supabase/admin';
 
 export const runtime = 'nodejs';
 
+// Campos qualificatórios "core" viram colunas dedicadas na tabela `public.leads`.
+// Os demais (específicos do Partners — cidade, nome do escritório, motivo, ambição etc)
+// vão no JSONB `extra` pra não mexer no schema compartilhado com laquila-growth /
+// email-whatsapp-mkt.
 const LeadSchema = z.object({
+  // identificação
   name: z.string().trim().min(2).max(120),
   email: z.string().trim().email().max(200),
   phone: z.string().trim().min(8).max(30),
+  cidade_uf: z.string().trim().min(2).max(120),
+  escritorio: z.string().trim().min(2).max(200),
+  instagram: z.string().trim().max(120).optional().nullable(),
+
+  // operação
   area: z.enum(['trabalhista', 'previdenciario', 'ambas', 'outra']),
   funcionarios_escritorio: z.enum(['solo', '2-3', '4+']),
+  tempo_investimento: z.enum(['ate6m', '6a12m', '1a2a', '+2a']),
+  contratos_mes: z.enum(['<5', '5a15', '15a30', '30a60', '+60']),
+  investimento_trafego: z.enum(['<5k', '5a15k', '15a30k', '30a60k', '+60k']),
+  quem_roda_marketing: z.enum(['agencia', 'freela', 'inhouse', 'eu', 'nenhum']),
+
+  // ambição
+  motivo: z.string().trim().min(5).max(1500),
+  ambicao_12m: z.string().trim().min(5).max(1500),
+  aceita_comissao: z.enum(['sim', 'entender', 'hibrido', 'nao']),
+
+  // tracking
   utm_source: z.string().trim().max(120).optional().nullable(),
   utm_medium: z.string().trim().max(120).optional().nullable(),
   utm_campaign: z.string().trim().max(120).optional().nullable(),
@@ -19,9 +40,6 @@ const LeadSchema = z.object({
   fbc: z.string().trim().max(200).optional().nullable(),
 });
 
-// Rate limit em memória (por IP, janela deslizante de 60s, limite 3).
-// Em Cloudflare Workers os isolates são efêmeros, então isso é "best-effort":
-// protege contra loops acidentais e força bruta simples.
 const recentByIp = new Map<string, number[]>();
 const RATE_WINDOW_MS = 60_000;
 const RATE_LIMIT = 3;
@@ -71,26 +89,43 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const data = parsed.data;
+  const d = parsed.data;
+
+  // investimento_trafego → coluna `faturamento_medio` (proxy de nível de investimento,
+  // reaproveita coluna que daily_leads já expõe pros outros projetos).
+  // Os demais qualificatórios específicos do Partners ficam em `extra` jsonb.
+  const extra: Record<string, string> = {
+    cidade_uf: d.cidade_uf,
+    escritorio: d.escritorio,
+    tempo_investimento: d.tempo_investimento,
+    contratos_mes: d.contratos_mes,
+    quem_roda_marketing: d.quem_roda_marketing,
+    motivo: d.motivo,
+    ambicao_12m: d.ambicao_12m,
+    aceita_comissao: d.aceita_comissao,
+  };
+  if (d.instagram) extra.instagram = d.instagram;
 
   try {
     const admin = createAdminClient();
     const { data: inserted, error } = await admin
       .from('leads')
       .insert({
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
-        area: data.area,
-        funcionarios_escritorio: data.funcionarios_escritorio,
+        name: d.name,
+        email: d.email,
+        phone: d.phone,
+        area: d.area,
+        funcionarios_escritorio: d.funcionarios_escritorio,
+        faturamento_medio: d.investimento_trafego,
         source: 'partners',
-        utm_source: data.utm_source || null,
-        utm_medium: data.utm_medium || null,
-        utm_campaign: data.utm_campaign || null,
-        utm_content: data.utm_content || null,
-        utm_term: data.utm_term || null,
-        fbp: data.fbp || null,
-        fbc: data.fbc || null,
+        utm_source: d.utm_source || null,
+        utm_medium: d.utm_medium || null,
+        utm_campaign: d.utm_campaign || null,
+        utm_content: d.utm_content || null,
+        utm_term: d.utm_term || null,
+        fbp: d.fbp || null,
+        fbc: d.fbc || null,
+        extra,
       })
       .select('id')
       .single();
