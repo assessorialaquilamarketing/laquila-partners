@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createAdminClient } from '@/lib/supabase/admin';
+import { createAdminClient, createFormsAdminClient } from '@/lib/supabase/admin';
 import { getPartnersFormMapping, type PartnersFieldKey } from '@/lib/partners-form';
 import { appendToPartnersSheet } from '@/lib/sheets';
 
@@ -111,12 +111,14 @@ export async function POST(req: NextRequest) {
   }
 
   const d = parsed.data;
+  // Dois clients: 'admin' → Receita (public.leads); 'formsAdmin' → laquila-forms DB (form_responses)
   const admin = createAdminClient();
+  const formsAdmin = createFormsAdminClient();
 
-  // ------- PASSO 1: form_responses (grava primeiro pra não deixar órfão) -------
+  // ------- PASSO 1: form_responses no DB do laquila-forms (dashboard) -------
   let responseId: string | null = null;
   try {
-    const { formId, blockMap } = await getPartnersFormMapping(admin);
+    const { formId, blockMap } = await getPartnersFormMapping(formsAdmin);
     const answers = buildAnswers(d, blockMap);
     const metadata = {
       source: 'partners-lp-landing',
@@ -132,7 +134,7 @@ export async function POST(req: NextRequest) {
       fbp: d.fbp ?? '',
       fbc: d.fbc ?? '',
     };
-    const { data: inserted, error } = await admin
+    const { data: inserted, error } = await formsAdmin
       .from('form_responses')
       .insert({ form_id: formId, answers, metadata })
       .select('id')
