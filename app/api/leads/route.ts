@@ -111,6 +111,16 @@ export async function POST(req: NextRequest) {
   }
 
   const d = parsed.data;
+
+  // Guard server-side: quem marca "Não tenho interesse nesse formato" NÃO entra no funil.
+  // Client já redireciona antes do fetch, mas aqui protege contra chamadas diretas/bots.
+  if (d.aceita_comissao === 'nao') {
+    return NextResponse.json(
+      { ok: true, skipped: true, reason: 'nao_aceita_comissao', redirect: 'https://lp.laquilamarketing.com.br' },
+      { status: 200 }
+    );
+  }
+
   // Dois clients: 'admin' → Receita (public.leads); 'formsAdmin' → laquila-forms DB (form_responses)
   const admin = createAdminClient();
   const formsAdmin = createFormsAdminClient();

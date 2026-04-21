@@ -50,6 +50,13 @@ export default function ApplicationForm() {
     });
     if (payload.phone) payload.phone = payload.phone.replace(/\D/g, '');
 
+    // Se o candidato não aceita o modelo de comissão, não entra no funil Partners.
+    // Redireciona pra Laquila Marketing sem enviar nada aos 3 destinos (forms/leads/sheet).
+    if (payload.aceita_comissao === 'nao') {
+      window.location.href = 'https://lp.laquilamarketing.com.br';
+      return;
+    }
+
     setState({ status: 'submitting' });
     try {
       const res = await fetch('/api/leads', {

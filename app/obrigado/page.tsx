@@ -31,7 +31,7 @@ export default function ObrigadoPage() {
           <div className="cta-row">
             <Link href="/" className="btn btn-outline">Voltar à página inicial</Link>
             <a
-              href="https://lp.laquilamarketing.com.br"
+              href="https://www.instagram.com/laquilamarketing/"
               className="btn btn-primary"
               target="_blank"
               rel="noopener noreferrer"
@@ -77,7 +77,7 @@ export default function ObrigadoPage() {
             o Partners foi construído.
           </p>
           <a
-            href="https://lp.laquilamarketing.com.br"
+            href="https://www.instagram.com/laquilamarketing/"
             className="btn btn-primary"
             target="_blank"
             rel="noopener noreferrer"
