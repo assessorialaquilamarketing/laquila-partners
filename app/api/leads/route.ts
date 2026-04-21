@@ -2,15 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getPartnersFormMapping, type PartnersFieldKey } from '@/lib/partners-form';
+import { appendToPartnersSheet } from '@/lib/sheets';
 
 export const runtime = 'nodejs';
 
-// Dual-write: toda submissão grava em DOIS lugares —
-//   1) public.leads (source='partners') — consumido por email-whatsapp-mkt / laquila-growth
-//   2) form_responses (form_id = Partners LP no laquila-forms) — aparece no
-//      dashboard forms.laquilacompany.app/dashboard
-// Se qualquer um falhar, a request retorna 500. form_responses é inserido PRIMEIRO
-// pra não deixar lead "órfão" em public.leads sem correspondente no dashboard.
+const PARTNERS_SHEET_ID = '1M4aiZMBJHJetnQhgL7JLDMgE47XrGfiQFIRpbnv9qU0';
+
+// Triple-write: toda submissão grava em TRÊS destinos —
+//   1) form_responses (form_id = Partners LP) — aparece no dashboard forms.laquilacompany.app
+//   2) public.leads (source='partners') — consumido por email-whatsapp-mkt / laquila-growth
+//   3) Google Sheet 'Partners LP' — planilha interna
+// Ordem: form_responses obrigatório (retorna 500 se falhar), leads + sheets best-effort (try/catch).
 const LeadSchema = z.object({
   name: z.string().trim().min(2).max(120),
   email: z.string().trim().email().max(200),
@@ -203,9 +205,42 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // ------- PASSO 3: Google Sheet (3º destino, best-effort) -------
+  let sheetAppended = false;
+  try {
+    await appendToPartnersSheet(PARTNERS_SHEET_ID, {
+      submitted_at: new Date().toISOString(),
+      submission_id: responseId!,
+      name: d.name,
+      email: d.email,
+      phone: d.phone,
+      cidade_uf: d.cidade_uf,
+      escritorio: d.escritorio,
+      instagram: d.instagram ?? '',
+      area: d.area,
+      funcionarios_escritorio: d.funcionarios_escritorio,
+      tempo_investimento: d.tempo_investimento,
+      contratos_mes: d.contratos_mes,
+      investimento_trafego: d.investimento_trafego,
+      quem_roda_marketing: d.quem_roda_marketing,
+      motivo: d.motivo,
+      ambicao_12m: d.ambicao_12m,
+      aceita_comissao: d.aceita_comissao,
+      utm_source: d.utm_source ?? '',
+      utm_medium: d.utm_medium ?? '',
+      utm_campaign: d.utm_campaign ?? '',
+      utm_content: d.utm_content ?? '',
+      utm_term: d.utm_term ?? '',
+    });
+    sheetAppended = true;
+  } catch (err) {
+    console.error('[partners/leads] sheets append failed:', err instanceof Error ? err.message : err);
+  }
+
   return NextResponse.json({
     ok: true,
     lead_id: insertedLead.id,
     response_id: responseId,
+    sheet_appended: sheetAppended,
   });
 }
