@@ -25,7 +25,7 @@ const LeadSchema = z.object({
   funcionarios_escritorio: z.enum(['solo', '2-3', '4+']),
   tempo_investimento: z.enum(['ate6m', '6a12m', '1a2a', '+2a']),
   contratos_mes: z.enum(['<5', '5a15', '15a30', '30a60', '+60']),
-  investimento_trafego: z.enum(['<5k', '5a15k', '15a30k', '30a60k', '+60k']),
+  investimento_trafego: z.enum(['nao_invisto', '<5k', '5a15k', '15a30k', '30a60k', '+60k']),
   quem_roda_marketing: z.enum(['agencia', 'freela', 'inhouse', 'eu', 'nenhum']),
 
   motivo: z.string().trim().min(5).max(1500),
@@ -112,11 +112,12 @@ export async function POST(req: NextRequest) {
 
   const d = parsed.data;
 
-  // Guard server-side: quem marca "Não tenho interesse nesse formato" NÃO entra no funil.
+  // Guard server-side: quem não aceita comissão OU ainda não invisto em tráfego NÃO entra no funil.
   // Client já redireciona antes do fetch, mas aqui protege contra chamadas diretas/bots.
-  if (d.aceita_comissao === 'nao') {
+  if (d.aceita_comissao === 'nao' || d.investimento_trafego === 'nao_invisto') {
+    const reason = d.aceita_comissao === 'nao' ? 'nao_aceita_comissao' : 'nao_invisto_trafego';
     return NextResponse.json(
-      { ok: true, skipped: true, reason: 'nao_aceita_comissao', redirect: 'https://lp.laquilamarketing.com.br' },
+      { ok: true, skipped: true, reason, redirect: 'https://lp.laquilamarketing.com.br' },
       { status: 200 }
     );
   }

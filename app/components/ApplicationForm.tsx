@@ -30,7 +30,10 @@ export default function ApplicationForm() {
   const [state, setState] = useState<State>({ status: 'idle' });
   const [phone, setPhone] = useState('');
   const [aceitaComissao, setAceitaComissao] = useState('');
+  const [investimentoTrafego, setInvestimentoTrafego] = useState('');
   const naoAceita = aceitaComissao === 'nao';
+  const naoInveste = investimentoTrafego === 'nao_invisto';
+  const mostraBotaoAlt = naoAceita || naoInveste;
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -56,9 +59,9 @@ export default function ApplicationForm() {
     });
     if (payload.phone) payload.phone = payload.phone.replace(/\D/g, '');
 
-    // Defesa em profundidade: submit não deveria nem rolar no caso 'nao' (o botão é outro).
-    // Mas se alguém disparar submit via devtools/scripts, garante skip.
-    if (payload.aceita_comissao === 'nao') {
+    // Defesa em profundidade: submit não deveria nem rolar quando o botão alt está ativo.
+    // Mas se alguém disparar submit via devtools/scripts, garante skip + redirect.
+    if (payload.aceita_comissao === 'nao' || payload.investimento_trafego === 'nao_invisto') {
       window.location.href = 'https://lp.laquilamarketing.com.br';
       return;
     }
@@ -205,8 +208,15 @@ export default function ApplicationForm() {
       <div className="field-row">
         <div className="field">
           <label htmlFor="f-investimento_trafego">Investimento mensal em tráfego pago<span className="req">*</span></label>
-          <select id="f-investimento_trafego" name="investimento_trafego" required defaultValue="">
+          <select
+            id="f-investimento_trafego"
+            name="investimento_trafego"
+            required
+            value={investimentoTrafego}
+            onChange={(e) => setInvestimentoTrafego(e.target.value)}
+          >
             <option value="" disabled>Selecione</option>
+            <option value="nao_invisto">Ainda não invisto em tráfego</option>
             <option value="<5k">Até R$ 5 mil</option>
             <option value="5a15k">R$ 5 mil a R$ 15 mil</option>
             <option value="15a30k">R$ 15 mil a R$ 30 mil</option>
@@ -264,7 +274,7 @@ export default function ApplicationForm() {
       <input id="f-fbp" type="hidden" name="fbp" />
       <input id="f-fbc" type="hidden" name="fbc" />
 
-      {naoAceita ? (
+      {mostraBotaoAlt ? (
         <button
           type="button"
           className="btn btn-primary btn-alt-cta"
