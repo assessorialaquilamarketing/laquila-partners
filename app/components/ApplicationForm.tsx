@@ -2,6 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { trackMetaLead } from './MetaPixel';
+import { trackGoogleAdsLead, trackGa4Lead } from './GoogleTags';
+
+const GADS_SEND_TO = process.env.NEXT_PUBLIC_GADS_LEAD_SEND_TO || '';
 
 type State = { status: 'idle' } | { status: 'submitting' } | { status: 'error'; message: string };
 
@@ -74,6 +78,18 @@ export default function ApplicationForm() {
         });
         return;
       }
+
+      // Dispara evento Lead em Meta Pixel + Google Ads + GA4.
+      // eventID compartilhado = response_id do form_responses, permite dedup com CAPI se for adicionada no futuro.
+      const eventID = String(json.response_id ?? json.lead_id ?? Date.now());
+      try {
+        trackMetaLead(eventID, { content_name: 'Partners LP', currency: 'BRL' });
+        if (GADS_SEND_TO) trackGoogleAdsLead(GADS_SEND_TO, eventID);
+        trackGa4Lead({ method: 'partners-lp', transaction_id: eventID });
+      } catch (e) {
+        console.warn('tracking failed', e);
+      }
+
       router.push('/obrigado');
     } catch {
       setState({
