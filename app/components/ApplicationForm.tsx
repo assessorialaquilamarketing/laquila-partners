@@ -31,9 +31,11 @@ export default function ApplicationForm() {
   const [phone, setPhone] = useState('');
   const [aceitaComissao, setAceitaComissao] = useState('');
   const [investimentoTrafego, setInvestimentoTrafego] = useState('');
-  const naoAceita = aceitaComissao === 'nao';
-  const naoInveste = investimentoTrafego === 'nao_invisto';
-  const mostraBotaoAlt = naoAceita || naoInveste;
+  const [contratosMes, setContratosMes] = useState('');
+  const mostraBotaoAlt =
+    investimentoTrafego === 'nao_invisto' ||
+    contratosMes === '<5' ||
+    aceitaComissao === 'nao';
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -61,7 +63,11 @@ export default function ApplicationForm() {
 
     // Defesa em profundidade: submit não deveria nem rolar quando o botão alt está ativo.
     // Mas se alguém disparar submit via devtools/scripts, garante skip + redirect.
-    if (payload.aceita_comissao === 'nao' || payload.investimento_trafego === 'nao_invisto') {
+    if (
+      payload.investimento_trafego === 'nao_invisto' ||
+      payload.contratos_mes === '<5' ||
+      payload.aceita_comissao === 'nao'
+    ) {
       window.location.href = 'https://lp.laquilamarketing.com.br';
       return;
     }
@@ -194,9 +200,9 @@ export default function ApplicationForm() {
         </div>
         <div className="field">
           <label htmlFor="f-contratos_mes">Contratos fechados por mês (digital, média)<span className="req">*</span></label>
-          <select id="f-contratos_mes" name="contratos_mes" required defaultValue="">
+          <select id="f-contratos_mes" name="contratos_mes" required value={contratosMes} onChange={(e) => setContratosMes(e.target.value)}>
             <option value="" disabled>Selecione</option>
-            <option value="&lt;5">Menos de 5</option>
+            <option value="<5">Menos de 5</option>
             <option value="5a15">5 a 15</option>
             <option value="15a30">15 a 30</option>
             <option value="30a60">30 a 60</option>

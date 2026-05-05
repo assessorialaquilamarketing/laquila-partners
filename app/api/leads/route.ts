@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createAdminClient, createFormsAdminClient } from '@/lib/supabase/admin';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { getPartnersFormMapping, type PartnersFieldKey } from '@/lib/partners-form';
 import { appendToPartnersSheet } from '@/lib/sheets';
 
@@ -112,25 +112,47 @@ export async function POST(req: NextRequest) {
 
   const d = parsed.data;
 
-  // Guard server-side: quem não aceita comissão OU ainda não invisto em tráfego NÃO entra no funil.
-  // Client já redireciona antes do fetch, mas aqui protege contra chamadas diretas/bots.
-  if (d.aceita_comissao === 'nao' || d.investimento_trafego === 'nao_invisto') {
-    const reason = d.aceita_comissao === 'nao' ? 'nao_aceita_comissao' : 'nao_invisto_trafego';
+  // Guard server-side: desqualificados NÃO entram no funil partners.
+  // Condições: não investe em tráfego, fecha menos de 5 contratos, ou não aceita comissão.
+  if (
+    d.investimento_trafego === 'nao_invisto' ||
+    d.contratos_mes === '<5' ||
+    d.aceita_comissao === 'nao'
+  ) {
+    const reason =
+      d.investimento_trafego === 'nao_invisto' ? 'nao_invisto_trafego' :
+      d.contratos_mes === '<5' ? 'menos_de_5_contratos' :
+      'nao_aceita_comissao';
     return NextResponse.json(
       { ok: true, skipped: true, reason, redirect: 'https://lp.laquilamarketing.com.br' },
       { status: 200 }
     );
   }
 
-  // Dois clients: 'admin' → Receita (public.leads); 'formsAdmin' → laquila-forms DB (form_responses)
   const admin = createAdminClient();
-  const formsAdmin = createFormsAdminClient();
 
-  // ------- PASSO 1: form_responses no DB do laquila-forms (dashboard) -------
+  // ------- PASSO 1: form_responses → form "Partners - Pré-Qualificação" (dashboard) -------
+  // Usa o form fixo slug=partners (id=6f19d6f3). Answers como objeto flat field→value.
+  const PARTNERS_PRE_QUAL_FORM_ID = '6f19d6f3-955d-4cd6-a456-d21e0e059e92';
   let responseId: string | null = null;
   try {
-    const { formId, blockMap } = await getPartnersFormMapping(formsAdmin);
-    const answers = buildAnswers(d, blockMap);
+    const answers: Record<string, string> = {
+      name: d.name,
+      email: d.email,
+      phone: d.phone,
+      cidade_uf: d.cidade_uf,
+      escritorio: d.escritorio,
+      area: d.area,
+      funcionarios_escritorio: d.funcionarios_escritorio,
+      tempo_investimento: d.tempo_investimento,
+      contratos_mes: d.contratos_mes,
+      investimento_trafego: d.investimento_trafego,
+      quem_roda_marketing: d.quem_roda_marketing,
+      motivo: d.motivo,
+      ambicao_12m: d.ambicao_12m,
+      aceita_comissao: d.aceita_comissao,
+      ...(d.instagram ? { instagram: d.instagram } : {}),
+    };
     const metadata = {
       source: 'partners-lp-landing',
       submitted_at: new Date().toISOString(),
@@ -145,9 +167,9 @@ export async function POST(req: NextRequest) {
       fbp: d.fbp ?? '',
       fbc: d.fbc ?? '',
     };
-    const { data: inserted, error } = await formsAdmin
+    const { data: inserted, error } = await admin
       .from('form_responses')
-      .insert({ form_id: formId, answers, metadata })
+      .insert({ form_id: PARTNERS_PRE_QUAL_FORM_ID, answers, metadata })
       .select('id')
       .single();
     if (error || !inserted) {
@@ -160,9 +182,9 @@ export async function POST(req: NextRequest) {
     responseId = inserted.id as string;
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'unknown_error';
-    console.error('[partners/leads] form lookup/insert exception:', msg);
+    console.error('[partners/leads] form_responses exception:', msg);
     return NextResponse.json(
-      { ok: false, error: 'form_lookup_failed', detail: msg },
+      { ok: false, error: 'form_responses_failed', detail: msg },
       { status: 500 }
     );
   }
@@ -218,7 +240,48 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // ------- PASSO 3: Google Sheet (3º destino, best-effort) -------
+  // ------- PASSO 3: forms.partners (3º destino, best-effort) -------
+  try {
+    const { error: fpError } = await admin.schema('forms').from('partners').insert({
+      response_id: responseId,
+      lead_id: insertedLead.id,
+      answers: {
+        name: d.name, email: d.email, phone: d.phone, cidade_uf: d.cidade_uf,
+        escritorio: d.escritorio, area: d.area,
+        funcionarios_escritorio: d.funcionarios_escritorio,
+        tempo_investimento: d.tempo_investimento, contratos_mes: d.contratos_mes,
+        investimento_trafego: d.investimento_trafego,
+        quem_roda_marketing: d.quem_roda_marketing,
+        motivo: d.motivo, ambicao_12m: d.ambicao_12m,
+        aceita_comissao: d.aceita_comissao,
+        ...(d.instagram ? { instagram: d.instagram } : {}),
+      },
+      metadata: { source: 'partners-lp-landing', submitted_at: new Date().toISOString() },
+      utm: {
+        utm_source: d.utm_source ?? '', utm_medium: d.utm_medium ?? '',
+        utm_campaign: d.utm_campaign ?? '', utm_content: d.utm_content ?? '',
+        utm_term: d.utm_term ?? '',
+      },
+      qual_o_seu_nome_completo: d.name,
+      qual_o_seu_e_mail_profissional: d.email,
+      qual_o_seu_whatsapp: d.phone,
+      em_qual_cidade_e_estado_voces_atuam: d.cidade_uf,
+      em_qual_area_do_direito_voce_atua: d.area,
+      quantas_pessoas_trabalham_no_escritorio_hoje: d.funcionarios_escritorio,
+      voces_ja_investem_em_marketing_digital_trafego_pag: d.investimento_trafego,
+      quantos_contratos_novos_voces_fecham_por_mes_em_me: d.contratos_mes,
+      qual_e_o_seu_principal_desafio_hoje_para_escalar: d.motivo,
+      o_que_te_chamou_atencao_no_partners: d.ambicao_12m,
+      utm_source: d.utm_source ?? '', utm_medium: d.utm_medium ?? '',
+      utm_campaign: d.utm_campaign ?? '', utm_content: d.utm_content ?? '',
+      utm_term: d.utm_term ?? '',
+    });
+    if (fpError) console.error('[partners/leads] forms.partners insert failed:', fpError.message);
+  } catch (err) {
+    console.error('[partners/leads] forms.partners insert failed:', err instanceof Error ? err.message : err);
+  }
+
+  // ------- PASSO 4: Google Sheet (4º destino, best-effort) -------
   let sheetAppended = false;
   try {
     await appendToPartnersSheet(PARTNERS_SHEET_ID, {
