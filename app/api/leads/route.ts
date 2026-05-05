@@ -131,28 +131,12 @@ export async function POST(req: NextRequest) {
 
   const admin = createAdminClient();
 
-  // ------- PASSO 1: form_responses → form "Partners - Pré-Qualificação" (dashboard) -------
-  // Usa o form fixo slug=partners (id=6f19d6f3). Answers como objeto flat field→value.
-  const PARTNERS_PRE_QUAL_FORM_ID = '6f19d6f3-955d-4cd6-a456-d21e0e059e92';
+  // ------- PASSO 1: form_responses → form "Partners LP" (dashboard) -------
+  // Busca block_ids do form partners-lp (39e9542b) e monta answers { block_id: value }.
   let responseId: string | null = null;
   try {
-    const answers: Record<string, string> = {
-      name: d.name,
-      email: d.email,
-      phone: d.phone,
-      cidade_uf: d.cidade_uf,
-      escritorio: d.escritorio,
-      area: d.area,
-      funcionarios_escritorio: d.funcionarios_escritorio,
-      tempo_investimento: d.tempo_investimento,
-      contratos_mes: d.contratos_mes,
-      investimento_trafego: d.investimento_trafego,
-      quem_roda_marketing: d.quem_roda_marketing,
-      motivo: d.motivo,
-      ambicao_12m: d.ambicao_12m,
-      aceita_comissao: d.aceita_comissao,
-      ...(d.instagram ? { instagram: d.instagram } : {}),
-    };
+    const { formId, blockMap } = await getPartnersFormMapping(admin);
+    const answers = buildAnswers(d, blockMap);
     const metadata = {
       source: 'partners-lp-landing',
       submitted_at: new Date().toISOString(),
@@ -169,7 +153,7 @@ export async function POST(req: NextRequest) {
     };
     const { data: inserted, error } = await admin
       .from('form_responses')
-      .insert({ form_id: PARTNERS_PRE_QUAL_FORM_ID, answers, metadata })
+      .insert({ form_id: formId, answers, metadata })
       .select('id')
       .single();
     if (error || !inserted) {
@@ -240,45 +224,39 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // ------- PASSO 3: forms.partners (3º destino, best-effort) -------
+  // ------- PASSO 3: forms.partners_lp (3º destino, best-effort) -------
   try {
-    const { error: fpError } = await admin.schema('forms').from('partners').insert({
+    const { error: flpError } = await admin.schema('forms').from('partners_lp').insert({
       response_id: responseId,
       lead_id: insertedLead.id,
-      answers: {
-        name: d.name, email: d.email, phone: d.phone, cidade_uf: d.cidade_uf,
-        escritorio: d.escritorio, area: d.area,
-        funcionarios_escritorio: d.funcionarios_escritorio,
-        tempo_investimento: d.tempo_investimento, contratos_mes: d.contratos_mes,
-        investimento_trafego: d.investimento_trafego,
-        quem_roda_marketing: d.quem_roda_marketing,
-        motivo: d.motivo, ambicao_12m: d.ambicao_12m,
-        aceita_comissao: d.aceita_comissao,
-        ...(d.instagram ? { instagram: d.instagram } : {}),
-      },
       metadata: { source: 'partners-lp-landing', submitted_at: new Date().toISOString() },
       utm: {
         utm_source: d.utm_source ?? '', utm_medium: d.utm_medium ?? '',
         utm_campaign: d.utm_campaign ?? '', utm_content: d.utm_content ?? '',
         utm_term: d.utm_term ?? '',
       },
-      qual_o_seu_nome_completo: d.name,
-      qual_o_seu_e_mail_profissional: d.email,
-      qual_o_seu_whatsapp: d.phone,
-      em_qual_cidade_e_estado_voces_atuam: d.cidade_uf,
-      em_qual_area_do_direito_voce_atua: d.area,
-      quantas_pessoas_trabalham_no_escritorio_hoje: d.funcionarios_escritorio,
-      voces_ja_investem_em_marketing_digital_trafego_pag: d.investimento_trafego,
-      quantos_contratos_novos_voces_fecham_por_mes_em_me: d.contratos_mes,
-      qual_e_o_seu_principal_desafio_hoje_para_escalar: d.motivo,
-      o_que_te_chamou_atencao_no_partners: d.ambicao_12m,
+      nome_completo: d.name,
+      e_mail: d.email,
+      whatsapp: d.phone,
+      cidade_uf: d.cidade_uf,
+      nome_do_escritorio: d.escritorio,
+      instagram_do_escritorio: d.instagram ?? '',
+      especialidade_principal: d.area,
+      tamanho_do_escritorio: d.funcionarios_escritorio,
+      ha_quanto_tempo_voce_investe_em_marketing_digital: d.tempo_investimento,
+      contratos_fechados_por_mes_digital_media: d.contratos_mes,
+      investimento_mensal_em_trafego_pago: d.investimento_trafego,
+      quem_roda_seu_marketing_hoje: d.quem_roda_marketing,
+      por_que_voce_esta_se_candidatando_ao_partners: d.motivo,
+      em_12_meses_onde_voce_quer_que_seu_escritorio_este: d.ambicao_12m,
+      voce_entende_e_aceita_o_modelo_de_comissao_sobre_c: d.aceita_comissao,
       utm_source: d.utm_source ?? '', utm_medium: d.utm_medium ?? '',
       utm_campaign: d.utm_campaign ?? '', utm_content: d.utm_content ?? '',
       utm_term: d.utm_term ?? '',
     });
-    if (fpError) console.error('[partners/leads] forms.partners insert failed:', fpError.message);
+    if (flpError) console.error('[partners/leads] forms.partners_lp insert failed:', flpError.message);
   } catch (err) {
-    console.error('[partners/leads] forms.partners insert failed:', err instanceof Error ? err.message : err);
+    console.error('[partners/leads] forms.partners_lp insert failed:', err instanceof Error ? err.message : err);
   }
 
   // ------- PASSO 4: Google Sheet (4º destino, best-effort) -------
