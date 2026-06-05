@@ -2,9 +2,9 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'Aplicacao recebida · Laquila Partners',
+  title: 'Aplicação recebida · Laquila Partners',
   description:
-    'Sua aplicacao foi recebida. O Partners prioriza escritorios com operacao digital ativa.',
+    'Sua aplicação foi recebida. O Partners prioriza escritórios com operação digital ativa.',
   robots: { index: false, follow: false },
 };
 
@@ -24,14 +24,14 @@ export default function ObrigadoNaoQualificadoPage() {
 
       <section className="hero">
         <div className="container">
-          <div className="eyebrow">Aplicacao recebida</div>
+          <div className="eyebrow">Aplicação recebida</div>
           <h1>
-            Recebemos seus dados. O Partners ainda pode nao ser o <em>proximo passo</em>.
+            Recebemos seus dados. O Partners ainda pode não ser o <em>próximo passo</em>.
           </h1>
           <p className="lede">
-            O Laquila Partners foi desenhado para escritorios que ja tem operacao digital ativa,
-            investimento recorrente e contratos fechando com consistencia. Se esse ainda nao e o seu
-            momento, o caminho certo e estruturar a base antes de entrar numa parceria avancada.
+            O Laquila Partners foi desenhado para escritórios que já têm operação digital ativa,
+            investimento recorrente e contratos fechando com consistência. Se esse ainda não é o seu
+            momento, o caminho certo é estruturar a base antes de entrar numa parceria avançada.
           </p>
           <div className="cta-row">
             <a
@@ -40,10 +40,10 @@ export default function ObrigadoNaoQualificadoPage() {
               target="_blank"
               rel="noopener noreferrer"
             >
-              Aplicar para assessoria sem comissao
+              Aplicar para assessoria sem comissão
             </a>
             <Link href="/" className="btn btn-outline">
-              Rever criterios do Partners
+              Rever critérios do Partners
             </Link>
           </div>
         </div>
@@ -53,32 +53,32 @@ export default function ObrigadoNaoQualificadoPage() {
         <div className="container">
           <div className="section-head">
             <div className="eyebrow">O que faz sentido agora</div>
-            <h2>Primeiro, construir uma operacao que consiga sustentar escala.</h2>
+            <h2>Primeiro, construir uma operação que consiga sustentar escala.</h2>
             <p className="lede">
-              Antes do Partners, o escritorio precisa validar o digital como canal. Isso significa
-              captar, atender, qualificar e fechar com previsibilidade minima.
+              Antes do Partners, o escritório precisa validar o digital como canal. Isso significa
+              captar, atender, qualificar e fechar com previsibilidade mínima.
             </p>
           </div>
 
           <div className="steps">
             <div className="step">
-              <h3>Captacao consistente</h3>
+              <h3>Captação consistente</h3>
               <p>
-                Criar uma entrada previsivel de oportunidades, com campanhas e criativos ajustados
-                para trabalhista ou previdenciario.
+                Criar uma entrada previsível de oportunidades, com campanhas e criativos ajustados
+                para trabalhista ou previdenciário.
               </p>
             </div>
             <div className="step">
               <h3>Atendimento organizado</h3>
               <p>
-                Ter cadencia, script e rotina comercial para separar curiosos de casos com chance
+                Ter cadência, script e rotina comercial para separar curiosos de casos com chance
                 real de contrato.
               </p>
             </div>
             <div className="step">
               <h3>Primeiros contratos pelo digital</h3>
               <p>
-                Fechar com recorrencia suficiente para saber quais teses, canais e abordagens valem
+                Fechar com recorrência suficiente para saber quais teses, canais e abordagens valem
                 investimento.
               </p>
             </div>
@@ -90,10 +90,10 @@ export default function ObrigadoNaoQualificadoPage() {
         <div className="container" style={{ maxWidth: 820 }}>
           <div className="section-head">
             <div className="eyebrow">Sem porta fechada</div>
-            <h2>Quando a base estiver pronta, voce pode voltar para o Partners.</h2>
+            <h2>Quando a base estiver pronta, você pode voltar para o Partners.</h2>
             <p className="lede">
-              Quando seu escritorio tiver operacao digital ativa, investimento recorrente e
-              contratos fechando com consistencia, a candidatura passa a fazer mais sentido. Ate la,
+              Quando seu escritório tiver operação digital ativa, investimento recorrente e
+              contratos fechando com consistência, a candidatura passa a fazer mais sentido. Até lá,
               a Laquila Marketing pode ser o caminho anterior.
             </p>
           </div>
@@ -101,17 +101,17 @@ export default function ObrigadoNaoQualificadoPage() {
             <div className="filter-card ok">
               <h3>Bom momento para assessoria</h3>
               <ul>
-                <li>Voce ainda esta validando o digital como canal</li>
-                <li>Voce fecha poucos contratos por mes vindos do digital</li>
-                <li>Voce precisa organizar trafego, atendimento e rotina comercial</li>
+                <li>Você ainda está validando o digital como canal</li>
+                <li>Você fecha poucos contratos por mês vindos do digital</li>
+                <li>Você precisa organizar tráfego, atendimento e rotina comercial</li>
               </ul>
             </div>
             <div className="filter-card not">
-              <h3>Ainda nao e Partners se</h3>
+              <h3>Ainda não é Partners se</h3>
               <ul>
-                <li>Nao existe investimento recorrente em trafego</li>
-                <li>Nao ha volume minimo de contratos digitais</li>
-                <li>O modelo por comissao ainda nao faz sentido para voce</li>
+                <li>Não existe investimento recorrente em tráfego</li>
+                <li>Não há volume mínimo de contratos digitais</li>
+                <li>O modelo por comissão ainda não faz sentido para você</li>
               </ul>
             </div>
           </div>
@@ -121,12 +121,12 @@ export default function ObrigadoNaoQualificadoPage() {
       <section className="closing">
         <div className="container">
           <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 12 }}>
-            Proximo passo
+            Próximo passo
           </div>
           <h2>Comece pela estrutura. Depois, escala.</h2>
           <p className="lede">
-            Se o seu escritorio ainda esta amadurecendo no digital, fale com a Laquila Marketing
-            sobre a assessoria de marketing sem comissao.
+            Se o seu escritório ainda está amadurecendo no digital, fale com a Laquila Marketing
+            sobre a assessoria de marketing sem comissão.
           </p>
           <a
             href="https://forms.laquilamarketing.com.br/aplicacao"
@@ -134,14 +134,14 @@ export default function ObrigadoNaoQualificadoPage() {
             target="_blank"
             rel="noopener noreferrer"
           >
-            Aplicar para assessoria sem comissao
+            Aplicar para assessoria sem comissão
           </a>
         </div>
       </section>
 
       <footer>
         <div className="container">
-          <div>© Laquila Partners · uma operacao da Laquila Marketing</div>
+          <div>© Laquila Partners · uma operação da Laquila Marketing</div>
           <div>
             <a href="https://laquilamarketing.com.br">laquilamarketing.com.br</a>
           </div>
