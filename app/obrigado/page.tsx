@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { Suspense } from 'react';
+import { ConversionFire } from '../components/ConversionFire';
 
 export const metadata: Metadata = {
   title: 'Aplicação recebida · Laquila Partners',
@@ -10,6 +12,9 @@ export const metadata: Metadata = {
 export default function ObrigadoPage() {
   return (
     <>
+      <Suspense fallback={null}>
+        <ConversionFire />
+      </Suspense>
       <header className="topbar">
         <div className="container">
           <div className="brand">

@@ -166,6 +166,8 @@ section.alt{background:var(--bg-elevated);border-top:1px solid var(--rule);borde
 @media (max-width:480px){.form-wrap .btn-alt-cta{font-size:13px;padding:14px 12px}}
 .form-note{font-size:13px;color:var(--ink-3);margin-top:14px;text-align:center}
 .form-error{background:#fbf5f5;border:1px solid #ead3d3;color:var(--danger);padding:12px 14px;border-radius:8px;font-size:14px;margin-bottom:16px}
+.field-hint-error{font-size:12px;color:var(--danger);margin-top:5px;}
+.field input.has-error,.field select.has-error,.field textarea.has-error{border-color:var(--danger);}
 .form-success{background:#f4faf5;border:1px solid #c9e3ce;color:var(--success);padding:16px;border-radius:8px;text-align:center}
 .form-success h3{color:var(--success);margin-bottom:6px;font-size:22px}
 .form-section-tag{margin:28px 0 14px;padding-top:20px;border-top:1px solid var(--rule);font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--accent-ink)}
@@ -197,3 +199,29 @@ section.alt{background:var(--bg-elevated);border-top:1px solid var(--rule);borde
 .closing .btn-primary:hover{background:#e0b257}
 footer{padding:40px 0;background:#0a0a0b;color:#8e8e90;font-size:14px}
 footer .container{display:flex;flex-wrap:wrap;gap:20px;justify-content:space-between;align-items:center}
+
+/* ---------- mobile responsive fixes (2026-04-21) ---------- */
+
+/* Safety-net: previne overflow horizontal caso algum filho estoure largura do viewport */
+html, body { overflow-x: hidden; }
+
+/* Topbar em telas muito pequenas (< 420px) — evita estouro brand + CTA */
+@media (max-width: 420px) {
+  .topbar .btn { padding: 10px 14px; font-size: 14px; }
+  .brand { font-size: 17px; }
+}
+
+/* Imagem do fundador (1200x1800 vertical) não pode ocupar mais que 70vh em mobile/tablet */
+@media (max-width: 860px) {
+  .founder-img { max-height: 70vh; overflow: hidden; }
+  .founder-img img { width: 100%; height: 100%; object-fit: cover; }
+}
+
+/* Hover-sticky fix: em touch devices (hover:none), desfaz efeitos que "grudam" após tap */
+@media (hover: none) {
+  .btn-primary:hover { transform: none; box-shadow: var(--shadow-sm); }
+  .btn-outline:hover { background: transparent; color: var(--ink); }
+  .benefit:hover { transform: none; box-shadow: none; }
+  .founder-img:hover { transform: none; box-shadow: 0 20px 60px rgba(0,0,0,.45), 0 0 30px rgba(212,175,55,.12); }
+  .closing .btn-primary:hover { background: var(--accent); }
+}
