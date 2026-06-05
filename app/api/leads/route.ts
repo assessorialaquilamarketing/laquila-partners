@@ -124,7 +124,7 @@ export async function POST(req: NextRequest) {
       d.contratos_mes === '<5' ? 'menos_de_5_contratos' :
       'nao_aceita_comissao';
     return NextResponse.json(
-      { ok: true, skipped: true, reason, redirect: 'https://lp.laquilamarketing.com.br' },
+      { ok: true, skipped: true, reason, redirect: '/obrigado/nao-qualificado' },
       { status: 200 }
     );
   }

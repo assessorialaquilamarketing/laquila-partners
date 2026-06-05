@@ -68,7 +68,7 @@ export default function ApplicationForm() {
       payload.contratos_mes === '<5' ||
       payload.aceita_comissao === 'nao'
     ) {
-      window.location.href = 'https://lp.laquilamarketing.com.br';
+      router.push('/obrigado/nao-qualificado');
       return;
     }
 
@@ -284,7 +284,7 @@ export default function ApplicationForm() {
         <button
           type="button"
           className="btn btn-primary btn-alt-cta"
-          onClick={() => { window.location.href = 'https://lp.laquilamarketing.com.br'; }}
+          onClick={() => { router.push('/obrigado/nao-qualificado'); }}
         >
           ENTÃO CONHEÇA A NOSSA ASSESSORIA POR MENSALIDADE
         </button>
